@@ -1,1 +1,6 @@
-policy/policyfile*
+policyfile*
+policyeditor
+boringssl/build/*
+boringssl/install/*
+*.pb.*
+*.o
