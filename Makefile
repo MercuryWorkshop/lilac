@@ -1,17 +1,15 @@
-privesc.sh: allassets allbinaries privesc.sh.pre
-	cpp -P -E -traditional-cpp -o privesc.sh < privesc.sh.pre
+LIBS = -lprotobuf -lssl -lcrypto
+LDFLAGS = -L./boringssl/install/lib -L/usr/lib
+CFLAGS = -I./boringssl/install/include -I/usr/include
 
-allbinaries: policy/patchpolicy.b64
-allassets: assets/pdf.pdf.b64 assets/ppd.ppd.b64
+patchpolicy: private_membership.pb.o private_membership_rlwe.pb.o serialization.pb.o device_management_backend.pb.o policy_common_definitions.pb.o chrome_device_policy.pb.o patchpolicy.cc
+#	x86_64-unknown-linux-gnu-g++ -std=c++17 $^ -o $@ $(CFLAGS) $(LDFLAGS) $(LIBS) 
+	g++ -std=c++17 $^ -o $@ $(CFLAGS) $(LDFLAGS) $(LIBS) 
+	strip $@
 
-%.b64: %
-	bzip2 -9c $< | base64 -w 100 > $@
-
-policy/patchpolicy: policy/patchpolicy.cc
-	make -C policy
-
-assets/%.b64: assets/%
-	bzip2 -9c $< | base64 -w 100 > $@
+%.o: %.cc
+#	x86_64-unknown-linux-gnu-g++ $(CFLAGS) $(LDFLAGS) -c $(LIBS) $< -o $@
+	g++ $(CFLAGS) $(LDFLAGS) -c $(LIBS) $< -o $@
 
 clean:
-	rm -f assets/*.b64 privesc.sh policy/patchpolicy policy/patchpolicy.b64
+	rm *.o patchpolicy
