@@ -31,6 +31,11 @@ using namespace std;
  *               lib that i need (it's the next day)
  */
 
+/*
+ * r58 update 3: i stopped working on this for a while and seem to have another breakthrough!!! woow!!
+ *               i also need to write to owner.key lol
+ */
+
 
 // Signing key test data in DER-encoded PKCS8 format.
 const uint8_t kSigningKey[] = {
@@ -191,6 +196,11 @@ int main(int argc, char *argv[]) {
         ofstream output(infile, ios::out | ios::binary);
         PFR.SerializeToOstream(&output);
         output.close();
+
+        ofstream keyout(infile+".key", ios::out | ios::binary);
+        keyout << pubkey;
+        keyout.close();
+        std::cout << "wrote pubkey to file" << std::endl;
     } else {
         std::cerr << "invalid 2nd argument " << argv[2] << std::endl;
         help();
