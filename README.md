@@ -3,6 +3,7 @@ it works lmao
 
 ## build instructions
  - build `boringssl` - source included just clear `boringssl/build` folder and then install to `boringssl/install`
+ - install `protobuf`
  - build the protobuf files - `protoc -I proto proto/* --cpp_out=.`
  - run `make`
 

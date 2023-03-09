@@ -36,6 +36,8 @@ using namespace std;
  *               i also need to write to owner.key lol
  */
 
+// the source code of rafflesia is below
+
 
 // Signing key test data in DER-encoded PKCS8 format.
 const uint8_t kSigningKey[] = {
@@ -139,6 +141,8 @@ void sign(uint8_t const key[], size_t keySize, std::string data, std::string* co
     signature_bytes.resize(lenSig);
     signature->assign(reinterpret_cast<const char*>(signature_bytes.data()),signature_bytes.size());
     std::cout << "sign: copied signature" << std::endl;
+    OPENSSL_free(context);
+    OPENSSL_free(pkey);
 }
 
 int main(int argc, char *argv[]) {
@@ -166,18 +170,12 @@ int main(int argc, char *argv[]) {
             std::cout << "SSP.block_devmode = " << SSP.block_devmode() << std::endl;
         }
     } else if (!strcmp(argv[2], "patch")) {
-        /*
-        * GuestModeEnabledProto instead of StartUp*
-        * set_allocated_guest_mode_enabled
-        *
-        */
         enterprise_management::GuestModeEnabledProto GMEP = CDSP.guest_mode_enabled();
         GMEP.set_guest_mode_enabled(true);
 
         if(CDSP.has_system_settings()) {
             enterprise_management::SystemSettingsProto SSP = CDSP.system_settings();
-            SSP.set_block_devmode(true);
-            CDSP.set_allocated_system_settings(&SSP);
+            SSP.set_block_devmode(false);
         }
 
         string PATCHED_CDSP;
