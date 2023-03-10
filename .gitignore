@@ -1,6 +1,8 @@
 policyfile*
+owner.key
 rafflesia
 boringssl/build/*
 boringssl/install/*
 *.pb.*
 *.o
+*.kate-swp

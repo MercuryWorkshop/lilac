@@ -1,11 +1,14 @@
 #include <algorithm>
 #include <cstring>
+#include <iterator>
 #include <openssl/evp.h>
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sys/stat.h>
+#include <filesystem>
+
 #include "device_management_backend.pb.h"
 #include "chrome_device_policy.pb.h"
 #include "boringssl/install/include/openssl/evp.h"
@@ -17,11 +20,19 @@
 
 using namespace std;
 
-// holy shit, we actually have device policy editing, holy fucking bingle what?! :3
-// rip ultrablue o7
-
-// rafflesia - the policy editor not the person
-// see https://discord.com/channels/1040039622853533706/1079146620777676842/1083250450742132737 for context (you need to be in mw)
+/*
+ * holy shit, we actually have device policy editing, holy fucking bingle what?! :3
+ * rip ultrablue 07
+ * rafflesia - the policy editor not the person
+ * see https://discord.com/channels/1040039622853533706/1079146620777676842/1083250450742132737 for context (need to be in mw)
+ *
+ * to add a policy value:
+ *  - find the policy protobuf class
+ *  - create a new const variable below the other ones, label it properly, and set the value
+ *  - in patch() copy one of the existing policy editors and modify it
+ *  - in help() add a new line that prints the const variable
+ *  - if info() does not print out the value of the policy already, add it
+ */
 
 // Signing key test data in DER-encoded PKCS8 format.
 const uint8_t kSigningKey[] = {
@@ -56,15 +67,24 @@ const uint8_t kSigningKey[] = {
     0x98, 0x68, 0xe1, 0x04, 0xa8, 0x92, 0xd0, 0x10, 0xaa,
 };
 
+const bool GMEV = 1;              // GuestModeEnabledProto
+const bool SUNOSV = 1;            // ShowUserNamesOnSigninProto
+const bool PVAV = 1;              // PluginVmAllowedProto
+const bool VMAV = 1;              // VirtualMachinesAllowedProto
+const bool DUCAV = 1;             // DeviceUnaffiliatedCrostiniAllowedProto
+const std::string RCP_MRCV = "";  // ReleaseChannelProto.mutable_release_lts_tag
+const bool SSPV = 1;              // SystemSettingsProto.block_devmode
+const std::string DWIP_MDWIV = "{ \"hash\": \"f0f4170422c4c3c0c6a4cd8b7b71479b1a9b8f258a321110ee456e228390e8aa\", \"url\": \"https://cdn.r58playz.ml/sh1mmerbg.jpeg\" }"; // DeviceWallpaperImageProto.mutable_device_wallpaper_image
+
 
 bool file_exists (const std::string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
 }
 
-void help() {
-    std::cerr << "rafflesia [/path/to/policy.XX] [info|patch|help|--help|-h]" << std::endl;
+void help(int exitcode) {
     std::cerr << "rafflesia is a device policy editor for chromeos." << std::endl;
+    std::cerr << "rafflesia [/var/lib/devicesettings/policy.XX] [info|patch|help|--help|-h]" << std::endl;
     std::cerr << "arguments:" << std::endl;
     std::cerr << "    info:" << std::endl;
     std::cerr << "        show some info about the policy file including what policy values are" << std::endl;
@@ -72,11 +92,23 @@ void help() {
     std::cerr << "        patch the given policy file" << std::endl;
     std::cerr << "    help|--help|-h:" << std::endl;
     std::cerr << "        show this help" << std::endl;
-    exit(1);
+    std::cerr << "usage:" << std::endl;
+    std::cerr << "    run rafflesia on a policy file with patch" << std::endl;
+    std::cerr << "    rafflesia will modify the policy file and create a new file called owner.key" << std::endl;
+    std::cerr << "    copy the files to /var/lib/devicesettings and turn wifi off so chrome doesn't sync policies" << std::endl;
+    std::cerr << "this version of rafflesia sets:" << std::endl;
+    std::cerr << "    guest_mode_enabled = "                   << GMEV << std::endl;
+    std::cerr << "    show_user_names = "                      << SUNOSV << std::endl;
+    std::cerr << "    plugin_vm_allowed = "                    << PVAV << std::endl;
+    std::cerr << "    virtual_machines_allowed = "             << VMAV << std::endl;
+    std::cerr << "    device_unaffiliated_crostini_allowed = " << DUCAV << std::endl;
+    std::cerr << "    release_lts_tag = "                      << RCP_MRCV << std::endl;
+    std::cerr << "    device_wallpaper_image = "               << DWIP_MDWIV << std::endl;
+    std::cerr << "    block_devmode = "                        << SSPV << std::endl;
+    exit(exitcode);
 }
 
 void sign(uint8_t const key[], size_t keySize, std::string data, std::string* const signature, std::string* pubkey) {
-    //create key
     CBS cbs;
     CBS_init(&cbs, key, keySize);
     EVP_PKEY* pkey = EVP_parse_private_key(&cbs);
@@ -133,18 +165,96 @@ void sign(uint8_t const key[], size_t keySize, std::string data, std::string* co
     OPENSSL_free(pkey);
 }
 
+void info(enterprise_management::ChromeDeviceSettingsProto* CDSP) {
+    std::cout << "DevicePolicyRefreshRate = " << CDSP->device_policy_refresh_rate().device_policy_refresh_rate() << std::endl;
+    std::cout << "UserWhitelistProto = ";
+    if(CDSP->user_whitelist().user_whitelist_size() == 0) {
+        std::cout << std::endl;
+    } else {
+        for(int i = 0; i < CDSP->user_whitelist().user_whitelist_size(); i++) {
+            std::cout << "                     " << CDSP->user_whitelist().user_whitelist().Get(i) << std::endl;
+        }
+    }
+    std::cout << "DeviceGuestModeEnabled = " << CDSP->guest_mode_enabled().guest_mode_enabled() << std::endl;
+    std::cout << "CameraEnabledProto = " << CDSP->camera_enabled().camera_enabled() << std::endl;
+    std::cout << "DeviceShowUserNamesOnSignin = " << CDSP->show_user_names().show_user_names() << std::endl;
+    std::cout << "DeviceDataRoamingEnabled = " << CDSP->data_roaming_enabled().data_roaming_enabled() << std::endl;
+    std::cout << "DeviceAllowNewUsers = " << CDSP->allow_new_users().allow_new_users() << std::endl;
+    std::cout << "DeviceMetricsReportingEnabled = " << CDSP->metrics_enabled().metrics_enabled() << std::endl;\
+    std::cout << "ChromeOsReleaseChannel = " << CDSP->release_channel().release_channel() << std::endl;
+    std::cout << "DeviceOpenNetworkConfiguration = " << CDSP->open_network_configuration().open_network_configuration() << std::endl;
+    std::cout << "DeviceReportingProto is currently not implemented for parsing" << std::endl;
+    std::cout << "DeviceEphemeralUsersEnabled = " << CDSP->ephemeral_users_enabled().ephemeral_users_enabled() << std::endl;
+    std::cout << "DeviceAutoUpdateDisabled = " << CDSP->auto_update_settings().update_disabled() << std::endl;
+    std::cout << "DeviceAutoUpdateP2PEnabled = " << CDSP->auto_update_settings().p2p_enabled() << std::endl;
+    std::cout << "DeviceAutoUpdateTimeRestrictions = " << CDSP->auto_update_settings().disallowed_time_intervals() << std::endl;
+    std::cout << "SystemTimezone = " << CDSP->system_timezone().timezone() << std::endl;
+    std::cout << "SystemTimezoneAutomaticDetection = " << CDSP->system_timezone().timezone_detection_type() << std::endl;
+    std::cout << "DeviceLocalAccounts is currently not implemented for parsing" << std::endl;
+    std::cout << "DeviceAllowRedeemChromeOsRegistrationOffers = " << CDSP->allow_redeem_offers().allow_redeem_offers() << std::endl;
+    std::cout << "FeatureFlagsProto is currently not implemented for parsing" << std::endl;
+    std::cout << "UptimeLimit = " << CDSP->uptime_limit().uptime_limit() << std::endl;
+    std::cout << "DeviceChromeVariations = " << CDSP->device_chrome_variations_type().value() << std::endl;
+    std::cout << "AttestationSettingsProto is currently not implemented for parsing" << std::endl;
+    std::cout << "AccessibilitySettingsProto is currently not implemented for parsing" << std::endl;
+    std::cout << "LoginScreenPowerManagement = " << CDSP->login_screen_power_management().login_screen_power_management() << std::endl;
+    std::cout << "SystemUse24HourClock = " << CDSP->use_24hour_clock().use_24hour_clock() << std::endl;
+    std::cout << "AutoCleanupSettigsProto (yes they misspelled it lmfao) is currently not implemented for parsing" << std::endl;
+    std::cout << "SAMLSettingsProto is currently not implemented for parsing" << std::endl;
+    std::cout << "DeviceRebootOnShutdown = " << CDSP->reboot_on_shutdown().reboot_on_shutdown() << std::endl;
+    std::cout << "DeviceHeartbeatSettingsProto is currently not implemented for parsing" << std::endl;
+
+    std::cout << "PluginVmAllowed = " << CDSP->plugin_vm_allowed().plugin_vm_allowed() << std::endl;
+    std::cout << "VirtualMachinesAllowed = " << CDSP->virtual_machines_allowed().virtual_machines_allowed() << std::endl;
+    std::cout << "DeviceUnaffiliatedCrostiniAllowed = " << CDSP->device_unaffiliated_crostini_allowed().device_unaffiliated_crostini_allowed() << std::endl;
+    std::cout << "release_lts_tag = " << CDSP->release_channel().release_lts_tag() << std::endl;
+    std::cout << "DeviceWallpaperImage = " << CDSP->device_wallpaper_image().device_wallpaper_image() << std::endl;
+    if(CDSP->has_system_settings()) {
+        enterprise_management::SystemSettingsProto SSP = CDSP->system_settings();
+        std::cout << "DeviceBlockDevmode = " << SSP.block_devmode() << std::endl;
+    }
+}
+
+void patch(enterprise_management::ChromeDeviceSettingsProto* CDSP) {
+    enterprise_management::GuestModeEnabledProto* GMEP = CDSP->mutable_guest_mode_enabled();
+    GMEP->set_guest_mode_enabled(GMEV);
+
+    enterprise_management::ShowUserNamesOnSigninProto* SUNOSP = CDSP->mutable_show_user_names();
+    SUNOSP->set_show_user_names(SUNOSV);
+
+    enterprise_management::PluginVmAllowedProto* PVAP = CDSP->mutable_plugin_vm_allowed();
+    PVAP->set_plugin_vm_allowed(PVAV);
+
+    enterprise_management::VirtualMachinesAllowedProto* VMAP = CDSP->mutable_virtual_machines_allowed();
+    VMAP->set_virtual_machines_allowed(VMAV);
+
+    enterprise_management::DeviceUnaffiliatedCrostiniAllowedProto* DUCAP = CDSP->mutable_device_unaffiliated_crostini_allowed();
+    DUCAP->set_device_unaffiliated_crostini_allowed(DUCAV);
+
+    enterprise_management::ReleaseChannelProto* RCP = CDSP->mutable_release_channel();
+    std::string* RCP_MRC = RCP->mutable_release_lts_tag();
+    RCP_MRC->assign(RCP_MRCV);
+
+    enterprise_management::DeviceWallpaperImageProto* DWIP = CDSP->mutable_device_wallpaper_image();
+    std::string* DWIP_MDWI = DWIP->mutable_device_wallpaper_image();
+    DWIP_MDWI->assign(DWIP_MDWIV);
+
+    if(CDSP->has_system_settings()) {
+        enterprise_management::SystemSettingsProto* SSP = CDSP->mutable_system_settings();
+        SSP->set_block_devmode(SSPV);
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         std::cerr << "rafflesia: not enough arguments" << std::endl;
-        help();
-    }
-
-    if(!strcmp(argv[2], "help")) {
-        help();
+        help(1);
+    } else if(!strcmp(argv[2], "help")) {
+        help(0);
     } else if(!strcmp(argv[2], "--help")) {
-        help();
+        help(0);
     } else if(!strcmp(argv[2], "-h")) {
-        help();
+        help(0);
     }
 
     string infile(argv[1]);
@@ -153,6 +263,8 @@ int main(int argc, char *argv[]) {
         std::cerr << "rafflesia: input policy file does not exist" << std::endl;
         exit(1);
     }
+    std::filesystem::path infilepath = infile; // bro i imported filesystem why is clangd complainingggg
+    std::string parent = infilepath.parent_path().string();
 
     fstream input(infile, ios::in | ios::binary);
     enterprise_management::PolicyFetchResponse PFR;
@@ -164,43 +276,10 @@ int main(int argc, char *argv[]) {
     CDSP.ParseFromString(PD.policy_value());
 
     if (!strcmp(argv[2], "info")) {
-        std::cout << "has_policy_data_signature = " << PFR.has_policy_data_signature() << std::endl;
-        std::cout << "guest_mode_enabled = " << CDSP.guest_mode_enabled().guest_mode_enabled() << std::endl;
-        std::cout << "show_user_names = " << CDSP.show_user_names().show_user_names() << std::endl;
-        std::cout << "plugin_vm_allowed  = " << CDSP.plugin_vm_allowed().plugin_vm_allowed() << std::endl;
-        std::cout << "virtual_machines_allowed = " << CDSP.virtual_machines_allowed().virtual_machines_allowed() << std::endl;
-        std::cout << "device_unaffiliated_crostini_allowed = " << CDSP.device_unaffiliated_crostini_allowed().device_unaffiliated_crostini_allowed() << std::endl;
-        std::cout << "release_channel = " << CDSP.release_channel().release_channel() << std::endl;
-        std::cout << "release_lts_tag = " << CDSP.release_channel().release_lts_tag() << std::endl;
-        std::cout << "has_system_settings = " << CDSP.has_system_settings() << std::endl;
-        if(CDSP.has_system_settings()) {
-            enterprise_management::SystemSettingsProto SSP = CDSP.system_settings();
-            std::cout << "block_devmode = " << SSP.block_devmode() << std::endl;
-        }
+        std::cout << "PFR.has_policy_data_signature = " << PFR.has_policy_data_signature() << std::endl;
+        info(&CDSP);
     } else if (!strcmp(argv[2], "patch")) {
-        enterprise_management::GuestModeEnabledProto* GMEP = CDSP.mutable_guest_mode_enabled();
-        GMEP->set_guest_mode_enabled(1);
-
-        enterprise_management::ShowUserNamesOnSigninProto* SUNOSP = CDSP.mutable_show_user_names();
-        SUNOSP->set_show_user_names(1);
-
-        enterprise_management::PluginVmAllowedProto* PVAP = CDSP.mutable_plugin_vm_allowed();
-        PVAP->set_plugin_vm_allowed(1);
-
-        enterprise_management::VirtualMachinesAllowedProto* VMAP = CDSP.mutable_virtual_machines_allowed();
-        VMAP->set_virtual_machines_allowed(1);
-
-        enterprise_management::DeviceUnaffiliatedCrostiniAllowedProto* DUCAP = CDSP.mutable_device_unaffiliated_crostini_allowed();
-        DUCAP->set_device_unaffiliated_crostini_allowed(1);
-
-        enterprise_management::ReleaseChannelProto* RCP = CDSP.mutable_release_channel();
-        std::string* RCP_MRC = RCP->mutable_release_lts_tag();
-        RCP_MRC->assign("");
-
-        if(CDSP.has_system_settings()) {
-            enterprise_management::SystemSettingsProto* SSP = CDSP.mutable_system_settings();
-            SSP->set_block_devmode(0);
-        }
+        patch(&CDSP);
 
         string PATCHED_CDSP;
         CDSP.SerializeToString(&PATCHED_CDSP);
@@ -217,12 +296,12 @@ int main(int argc, char *argv[]) {
         PFR.SerializeToOstream(&output);
         output.close();
 
-        ofstream keyout(infile+".key", ios::out | ios::binary);
+        ofstream keyout(parent + "owner.key", ios::out | ios::binary);
         keyout << pubkey;
         keyout.close();
     } else {
         std::cerr << "invalid 2nd argument " << argv[2] << std::endl;
-        help();
+        help(1);
     }
 
     return 0;
