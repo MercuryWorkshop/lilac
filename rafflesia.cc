@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sys/stat.h>
 #include "device_management_backend.pb.h"
 #include "chrome_device_policy.pb.h"
 #include "boringssl/install/include/openssl/evp.h"
@@ -19,8 +20,8 @@ using namespace std;
 // holy shit, we actually have device policy editing, holy fucking bingle what?! :3
 // rip ultrablue o7
 
-// the source code of rafflesia is below
-
+// rafflesia - the policy editor not the person
+// see https://discord.com/channels/1040039622853533706/1079146620777676842/1083250450742132737 for context (you need to be in mw)
 
 // Signing key test data in DER-encoded PKCS8 format.
 const uint8_t kSigningKey[] = {
@@ -56,9 +57,21 @@ const uint8_t kSigningKey[] = {
 };
 
 
+bool file_exists (const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
 
 void help() {
-    std::cerr << "patchpolicy [/path/to/policy.XX] [info|patch]" << std::endl;
+    std::cerr << "rafflesia [/path/to/policy.XX] [info|patch|help|--help|-h]" << std::endl;
+    std::cerr << "rafflesia is a device policy editor for chromeos." << std::endl;
+    std::cerr << "arguments:" << std::endl;
+    std::cerr << "    info:" << std::endl;
+    std::cerr << "        show some info about the policy file including what policy values are" << std::endl;
+    std::cerr << "    patch:" << std::endl;
+    std::cerr << "        patch the given policy file" << std::endl;
+    std::cerr << "    help|--help|-h:" << std::endl;
+    std::cerr << "        show this help" << std::endl;
     exit(1);
 }
 
@@ -71,8 +84,6 @@ void sign(uint8_t const key[], size_t keySize, std::string data, std::string* co
         std::cerr << "sign: failed to create private key" << std::endl;
         exit(1);
     }
-
-    std::cout << "sign: created private key" << std::endl;
 
     std::vector<uint8_t> pubkey_vec;
     uint8_t *der;
@@ -97,14 +108,11 @@ void sign(uint8_t const key[], size_t keySize, std::string data, std::string* co
         std::cerr << "sign: failed to init signing context" << std::endl;
         exit(1);
     }
-    std::cout << "sign: initted signing context" << std::endl;
 
     if (!EVP_DigestSignUpdate(context, data.c_str(), data.size())) {
         std::cerr << "sign: failed to update signing context" << std::endl;
         exit(1);
     }
-
-    std::cout << "sign: updated signing context" << std::endl;
 
     std::vector<uint8_t> signature_bytes;
     // get max length of sig
@@ -114,46 +122,72 @@ void sign(uint8_t const key[], size_t keySize, std::string data, std::string* co
         exit(1);
     }
     signature_bytes.resize(lenSig);
-    std::cout << "sign: finalizing signature pt1" << std::endl;
 
     if (!EVP_DigestSignFinal(context, signature_bytes.data(), &lenSig)) {
         std::cerr << "sign: failed to finalize signature" << std::endl;
         exit(1);
     }
-    std::cout << "sign: finalized signature" << std::endl;
     signature_bytes.resize(lenSig);
     signature->assign(reinterpret_cast<const char*>(signature_bytes.data()),signature_bytes.size());
-    std::cout << "sign: copied signature" << std::endl;
     OPENSSL_free(context);
     OPENSSL_free(pkey);
 }
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
+        std::cerr << "rafflesia: not enough arguments" << std::endl;
         help();
     }
+
+    string infile(argv[1]);
+
+    if(!file_exists(infile)) {
+        std::cerr << "rafflesia: input policy file does not exist" << std::endl;
+        exit(1);
+    }
+
+    fstream input(infile, ios::in | ios::binary);
     enterprise_management::PolicyFetchResponse PFR;
     enterprise_management::PolicyData PD;
     enterprise_management::ChromeDeviceSettingsProto CDSP;
-    string infile(argv[1]);
-
-    fstream input(infile, ios::in | ios::binary);
     PFR.ParseFromIstream(&input);
     input.close();
     PD.ParseFromString(PFR.policy_data());
     CDSP.ParseFromString(PD.policy_value());
 
     if (!strcmp(argv[2], "info")) {
-        std::cout << "PFR.has_policy_data_signature = " << PFR.has_policy_data_signature() << std::endl;
-        std::cout << "GMEP.guest_mode_enabled = " << CDSP.guest_mode_enabled().guest_mode_enabled() << std::endl;
-        std::cout << "CDSP.has_system_settings = " << CDSP.has_system_settings() << std::endl;
+        std::cout << "has_policy_data_signature = " << PFR.has_policy_data_signature() << std::endl;
+        std::cout << "guest_mode_enabled = " << CDSP.guest_mode_enabled().guest_mode_enabled() << std::endl;
+        std::cout << "show_user_names = " << CDSP.show_user_names().show_user_names() << std::endl;
+        std::cout << "plugin_vm_allowed  = " << CDSP.plugin_vm_allowed().plugin_vm_allowed() << std::endl;
+        std::cout << "virtual_machines_allowed = " << CDSP.virtual_machines_allowed().virtual_machines_allowed() << std::endl;
+        std::cout << "device_unaffiliated_crostini_allowed = " << CDSP.device_unaffiliated_crostini_allowed().device_unaffiliated_crostini_allowed() << std::endl;
+        std::cout << "release_channel = " << CDSP.release_channel().release_channel() << std::endl;
+        std::cout << "release_lts_tag = " << CDSP.release_channel().release_lts_tag() << std::endl;
+        std::cout << "has_system_settings = " << CDSP.has_system_settings() << std::endl;
         if(CDSP.has_system_settings()) {
             enterprise_management::SystemSettingsProto SSP = CDSP.system_settings();
-            std::cout << "SSP.block_devmode = " << SSP.block_devmode() << std::endl;
+            std::cout << "block_devmode = " << SSP.block_devmode() << std::endl;
         }
     } else if (!strcmp(argv[2], "patch")) {
         enterprise_management::GuestModeEnabledProto* GMEP = CDSP.mutable_guest_mode_enabled();
         GMEP->set_guest_mode_enabled(1);
+
+        enterprise_management::ShowUserNamesOnSigninProto* SUNOSP = CDSP.mutable_show_user_names();
+        SUNOSP->set_show_user_names(1);
+
+        enterprise_management::PluginVmAllowedProto* PVAP = CDSP.mutable_plugin_vm_allowed();
+        PVAP->set_plugin_vm_allowed(1);
+
+        enterprise_management::VirtualMachinesAllowedProto* VMAP = CDSP.mutable_virtual_machines_allowed();
+        VMAP->set_virtual_machines_allowed(1);
+
+        enterprise_management::DeviceUnaffiliatedCrostiniAllowedProto* DUCAP = CDSP.mutable_device_unaffiliated_crostini_allowed();
+        DUCAP->set_device_unaffiliated_crostini_allowed(1);
+
+        enterprise_management::ReleaseChannelProto* RCP = CDSP.mutable_release_channel();
+        std::string* RCP_MRC = RCP->mutable_release_lts_tag();
+        RCP_MRC->assign("");
 
         if(CDSP.has_system_settings()) {
             enterprise_management::SystemSettingsProto* SSP = CDSP.mutable_system_settings();
@@ -166,11 +200,9 @@ int main(int argc, char *argv[]) {
 
         string PATCHED_PD;
         PD.SerializeToString(&PATCHED_PD);
-        std::cout << "signing" << std::endl;
         std::string pubkey = std::string();
         sign(kSigningKey, sizeof(kSigningKey), PFR.policy_data(), PFR.mutable_policy_data_signature(), &pubkey);
         PFR.set_new_public_key(pubkey);
-        std::cout << "signed" << std::endl;
         PFR.set_policy_data(PATCHED_PD);
 
         ofstream output(infile, ios::out | ios::binary);
@@ -180,7 +212,6 @@ int main(int argc, char *argv[]) {
         ofstream keyout(infile+".key", ios::out | ios::binary);
         keyout << pubkey;
         keyout.close();
-        std::cout << "wrote pubkey to file" << std::endl;
     } else {
         std::cerr << "invalid 2nd argument " << argv[2] << std::endl;
         help();
