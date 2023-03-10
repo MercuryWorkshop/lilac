@@ -139,6 +139,14 @@ int main(int argc, char *argv[]) {
         help();
     }
 
+    if(!strcmp(argv[2], "help")) {
+        help();
+    } else if(!strcmp(argv[2], "--help")) {
+        help();
+    } else if(!strcmp(argv[2], "-h")) {
+        help();
+    }
+
     string infile(argv[1]);
 
     if(!file_exists(infile)) {
