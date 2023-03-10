@@ -19,23 +19,6 @@ using namespace std;
 // holy shit, we actually have device policy editing, holy fucking bingle what?! :3
 // rip ultrablue o7
 
-/*
- * OK breakthrough at like 1am, i need to generate a new key + sign the blob in this code
- * the --disable-policy-key-verification only disables verifying my custom key not verification
- * altogether
- * - r58 (i have like 5 tabs of code search open) (and a few tabs of gitiles) (and chromeenterprise.google/policies)
- */
-
-/*
- * r58 update 2: i need to either compile all of chromium and extract the crypto lib or rewrite the parts of the
- *               lib that i need (it's the next day)
- */
-
-/*
- * r58 update 3: i stopped working on this for a while and seem to have another breakthrough!!! woow!!
- *               i also need to write to owner.key lol
- */
-
 // the source code of rafflesia is below
 
 
@@ -146,6 +129,9 @@ void sign(uint8_t const key[], size_t keySize, std::string data, std::string* co
 }
 
 int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        help();
+    }
     enterprise_management::PolicyFetchResponse PFR;
     enterprise_management::PolicyData PD;
     enterprise_management::ChromeDeviceSettingsProto CDSP;
@@ -157,10 +143,6 @@ int main(int argc, char *argv[]) {
     PD.ParseFromString(PFR.policy_data());
     CDSP.ParseFromString(PD.policy_value());
 
-    if (argc != 3) {
-        help();
-    }
-
     if (!strcmp(argv[2], "info")) {
         std::cout << "PFR.has_policy_data_signature = " << PFR.has_policy_data_signature() << std::endl;
         std::cout << "GMEP.guest_mode_enabled = " << CDSP.guest_mode_enabled().guest_mode_enabled() << std::endl;
@@ -170,16 +152,16 @@ int main(int argc, char *argv[]) {
             std::cout << "SSP.block_devmode = " << SSP.block_devmode() << std::endl;
         }
     } else if (!strcmp(argv[2], "patch")) {
-        enterprise_management::GuestModeEnabledProto GMEP = CDSP.guest_mode_enabled();
-        GMEP.set_guest_mode_enabled(true);
+        enterprise_management::GuestModeEnabledProto* GMEP = CDSP.mutable_guest_mode_enabled();
+        GMEP->set_guest_mode_enabled(1);
 
         if(CDSP.has_system_settings()) {
-            enterprise_management::SystemSettingsProto SSP = CDSP.system_settings();
-            SSP.set_block_devmode(false);
+            enterprise_management::SystemSettingsProto* SSP = CDSP.mutable_system_settings();
+            SSP->set_block_devmode(0);
         }
 
         string PATCHED_CDSP;
-        GMEP.SerializeToString(&PATCHED_CDSP);
+        CDSP.SerializeToString(&PATCHED_CDSP);
         PD.set_policy_value(PATCHED_CDSP);
 
         string PATCHED_PD;
