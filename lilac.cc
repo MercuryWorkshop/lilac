@@ -23,8 +23,6 @@ using namespace std;
 /*
  * holy shit, we actually have device policy editing, holy fucking bingle what?! :3
  * rip ultrablue 07
- * rafflesia - the policy editor not the person
- * see https://discord.com/channels/1040039622853533706/1079146620777676842/1083250450742132737 for context (need to be in mw)
  *
  * to add a policy value:
  *  - find the policy protobuf class
@@ -83,8 +81,8 @@ bool file_exists (const std::string& name) {
 }
 
 void help(int exitcode) {
-    std::cerr << "rafflesia is a device policy editor for chromeos." << std::endl;
-    std::cerr << "rafflesia [/var/lib/devicesettings/policy.XX] [info|patch|help|--help|-h]" << std::endl;
+    std::cerr << "lilac is a device policy editor for chromeos." << std::endl;
+    std::cerr << "lilac [/var/lib/devicesettings/policy.XX] [info|patch|help|--help|-h]" << std::endl;
     std::cerr << "arguments:" << std::endl;
     std::cerr << "    info:" << std::endl;
     std::cerr << "        show some info about the policy file including what policy values are" << std::endl;
@@ -93,10 +91,10 @@ void help(int exitcode) {
     std::cerr << "    help|--help|-h:" << std::endl;
     std::cerr << "        show this help" << std::endl;
     std::cerr << "usage:" << std::endl;
-    std::cerr << "    run rafflesia on a policy file with patch" << std::endl;
-    std::cerr << "    rafflesia will modify the policy file and create a new file called owner.key" << std::endl;
+    std::cerr << "    run lilac on a policy file with patch" << std::endl;
+    std::cerr << "    lilac will modify the policy file and create a new file called owner.key" << std::endl;
     std::cerr << "    copy the files to /var/lib/devicesettings and turn wifi off so chrome doesn't sync policies" << std::endl;
-    std::cerr << "this version of rafflesia sets:" << std::endl;
+    std::cerr << "this version of lilac sets:" << std::endl;
     std::cerr << "    guest_mode_enabled = "                   << GMEV << std::endl;
     std::cerr << "    show_user_names = "                      << SUNOSV << std::endl;
     std::cerr << "    plugin_vm_allowed = "                    << PVAV << std::endl;
@@ -247,7 +245,7 @@ void patch(enterprise_management::ChromeDeviceSettingsProto* CDSP) {
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
-        std::cerr << "rafflesia: not enough arguments" << std::endl;
+        std::cerr << "lilac: not enough arguments" << std::endl;
         help(1);
     } else if(!strcmp(argv[2], "help")) {
         help(0);
@@ -260,7 +258,7 @@ int main(int argc, char *argv[]) {
     string infile(argv[1]);
 
     if(!file_exists(infile)) {
-        std::cerr << "rafflesia: input policy file does not exist" << std::endl;
+        std::cerr << "lilac: input policy file does not exist" << std::endl;
         exit(1);
     }
     std::filesystem::path infilepath = infile; // bro i imported filesystem why is clangd complainingggg

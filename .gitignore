@@ -1,6 +1,6 @@
 policyfile*
 owner.key
-rafflesia
+lilac
 boringssl/build/*
 boringssl/install/*
 *.pb.*

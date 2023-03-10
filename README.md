@@ -1,4 +1,4 @@
-# rafflesia
+# lilac
 it works lmao
 
 ## build instructions
