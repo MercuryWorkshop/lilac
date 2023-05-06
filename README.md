@@ -11,7 +11,7 @@ it works lmao
 
 ## run instructions
  - change the release channel to `testimage-channel` in `/etc/lsb-release`
- - add `--disable-policy-key-verification` to command line flags
+ - add `--disable-policy-key-verification` to command line flags (update: you only need to restart chrome with this flag once after you replace the policies)
  - run policyeditor on a `policy.*` in `/var/lib/devicesettings`
  - overwrite policies and `owner.key` (`owner.key` is saved as `<filename>.key`)
  
