@@ -1,7 +1,7 @@
 # lilac
 it works lmao
 
-[blog post](https://www.r58playz.ml/post/lilac-the-device-policy-story)
+[blog post](https://www.r58playz.dev/post/lilac-the-device-policy-story)
 
 ## build instructions
  - build `boringssl` - source included just clear `boringssl/build` folder and then install to `boringssl/install`
