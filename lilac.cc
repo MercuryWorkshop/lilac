@@ -72,7 +72,7 @@ const bool VMAV = 1;              // VirtualMachinesAllowedProto
 const bool DUCAV = 1;             // DeviceUnaffiliatedCrostiniAllowedProto
 const std::string RCP_MRCV = "";  // ReleaseChannelProto.mutable_release_lts_tag
 const bool SSPV = 0;              // SystemSettingsProto.block_devmode
-const std::string DWIP_MDWIV = "{ \"hash\": \"f0f4170422c4c3c0c6a4cd8b7b71479b1a9b8f258a321110ee456e228390e8aa\", \"url\": \"https://cdn.r58playz.ml/sh1mmerbg.jpeg\" }"; // DeviceWallpaperImageProto.mutable_device_wallpaper_image
+const std::string DWIP_MDWIV = "{ \"hash\": \"f0f4170422c4c3c0c6a4cd8b7b71479b1a9b8f258a321110ee456e228390e8aa\", \"url\": \"https://cdn.r58playz.dev/sh1mmerbg.jpeg\" }"; // DeviceWallpaperImageProto.mutable_device_wallpaper_image
 
 
 bool file_exists (const std::string& name) {
