@@ -9,6 +9,8 @@ it works lmao
  - build the protobuf files - `protoc -I proto proto/* --cpp_out=.`
  - run `make`
 
+You may need to set `LD_LIBRARY_PATH=boringssl/install/lib` to run lilac.
+
 ## run instructions
  - change the release channel to `testimage-channel` in `/etc/lsb-release`
  - add `--disable-policy-key-verification` to command line flags (update: you only need to restart chrome with this flag once after you replace the policies)
