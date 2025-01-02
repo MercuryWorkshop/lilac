@@ -12,7 +12,7 @@ Lilac is a device policy editor for ChromeOS that exploits a flag called `--disa
 - Clone the repo by running `git clone https://github.com/mercuryworkshop/lilac.git`
 - Install `protobuf` using the package manager of your choice (`yay, apt, etc`)
 - Compile `boringssl` by navigating from your home directory to `lilac/boringssl/build` and run:
-<ul></ul>
+<ul>
 > ```
 > cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/lilac/boringssl/install -DBUILD_SHARED_LIBS=on
 > make
