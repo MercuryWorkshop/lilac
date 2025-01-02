@@ -2,6 +2,11 @@
 
 [blog post](https://www.r58playz.dev/post/lilac-the-device-policy-story)
 
+## What is it?
+Lilac is a device policy editor for ChromeOS that exploits a flag called `--disable-policy-key-verification` in Chrome. When used, the flag disables the verification of the signature of the policy blob, allowing for the policy to be tampered with.
+
+[You can view the original blog post here](https://www.r58playz.dev/post/lilac-the-device-policy-story)
+
 ## build instructions
  - build `boringssl` - source included just clear `boringssl/build` folder and then install to `boringssl/install`
  - install `protobuf`
