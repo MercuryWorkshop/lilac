@@ -1,7 +1,7 @@
 <img src="Lilac.png" alt="Lilac">
 
 ## What is it?
-Lilac is a device policy editor for ChromeOS that exploits a flag called `--disable-policy-key-verification` in Chrome. When used, the flag disables the verification of the signature of the policy blob, allowing for the policy to be tampered with.
+Lilac is a device policy editor for ChromeOS that exploits a flag called `--disable-policy-key-verification` in Chrome. When used, the flag disables the verification of the signature of the policy blob, allowing for modification.
 
 [You can view the original blog post here](https://www.r58playz.dev/post/lilac-the-device-policy-story)
 
