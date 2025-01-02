@@ -1,4 +1,4 @@
-[test](https://github.com/CaenJones/lilac/blob/main/Lilac.png?raw=true)
+<img src="Lilac.png" alt="Lilac">
 
 [blog post](https://www.r58playz.dev/post/lilac-the-device-policy-story)
 
