@@ -1,5 +1,8 @@
 <img src="Lilac.png" alt="Lilac">
 
+> [!IMPORTANT]  
+> Protobuf bindings may need to be adjusted for different chrome versions because of different policy blob layouts which my prevent Lilac from working correctly
+
 ## What is it?
 Lilac is a device policy editor for ChromeOS that exploits a flag called `--disable-policy-key-verification`. When used, the flag disables the verification of the policy blob's signature, allowing it to be modified.
 
@@ -19,14 +22,8 @@ Lilac is a device policy editor for ChromeOS that exploits a flag called `--disa
 
 If you get undefined symbol errors, you may need to export `LD_LIBRARY_PATH="boringssl/install/lib"`.
 
-## run instructions
- - change the release channel to `testimage-channel` in `/etc/lsb-release`
- - add `--disable-policy-key-verification` to command line flags (update: you only need to restart chrome with this flag once after you replace the policies)
- - run policyeditor on a `policy.*` in `/var/lib/devicesettings`
- - overwrite policies and `owner.key` (`owner.key` is saved as `<filename>.key`)
- 
-## notes
- - you probably need to keep wifi off / fake network error / overwrite policies and restart ui for this to persist
-   - apparently not... i have had lilac edited policies with wifi on for multiple weeks, it may not show as online on gac when syncing policies due to a signature error because i overwrite the policy sig
- - policies sync every time chrome starts meaning `restart ui` will reload policies + try to fetch them
- - protobuf bindings and even the editor may need to be adjusted for different chrome versions i.e. 81 has a completely different policy blob layout which might not allow this editing
+## Running Lilac
+ - Change the release channel to `testimage-channel` by editing `/etc/lsb-release`
+ - Add the `--disable-policy-key-verification` flag to `/etc/chrome_dev.conf` and then run `sudo restart ui`
+ - Run policyeditor on a `policy.*` in `/var/lib/devicesettings`
+ - Overwrite policies and `owner.key` (saved as `<filename>.key`)
