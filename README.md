@@ -1,7 +1,7 @@
 <img src="Lilac.png" alt="Lilac">
 
 > [!IMPORTANT]  
-> Protobuf bindings may need to be adjusted for different chrome versions because of different policy blob layouts which my prevent Lilac from working correctly
+> Protobuf bindings may need changes for different Chrome versions due to different policy blob layouts, which could prevent Lilac from working correctly.
 
 ## What is it?
 Lilac is a device policy editor for ChromeOS that exploits a flag called `--disable-policy-key-verification`. When used, the flag disables the verification of the policy blob's signature, allowing it to be modified.
