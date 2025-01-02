@@ -17,7 +17,7 @@ Lilac is a device policy editor for ChromeOS that exploits a flag called `--disa
 - Move back to the lilac directory and compile protobuf by running `protoc proto/* -Iproto --cpp_out=. `
 - Run `make` to start Lilac
 
-If you get undefined symbol errors, you may need to export LD_LIBRARY_PATH="boringssl/install/lib".
+If you get undefined symbol errors, you may need to export `LD_LIBRARY_PATH="boringssl/install/lib"`.
 
 ## run instructions
  - change the release channel to `testimage-channel` in `/etc/lsb-release`
